@@ -725,10 +725,16 @@ defmodule Mongo do
   @doc false
   @spec exec_command_session(GenServer.server, BSON.document, Keyword.t) :: {:ok, BSON.document | nil} | {:error, Mongo.Error.t}
   def exec_command_session(session, cmd, opts) do
+    cmd
+    |> Enum.into(%{})
+    |> trace_start()
+
     with {:ok, conn, new_cmd}      <- Session.bind_session(session, cmd),
          {:ok, _cmd, {doc, event}} <- DBConnection.execute(conn, %Query{action: :command}, [new_cmd], defaults(opts)),
          doc                       <- Session.update_session(session, doc, opts),
          {:ok, doc}                <- check_for_error(doc, event) do
+      trace_stop(event)
+          
       {:ok, doc}
     else
       {:error, error} ->
@@ -741,17 +747,37 @@ defmodule Mongo do
           false -> {:error, error}
         end
     end
-
   end
 
   @doc false
   @spec exec_command(GenServer.server, BSON.document, Keyword.t) :: {:ok, BSON.document | nil} | {:error, Mongo.Error.t}
   def exec_command(conn, cmd, opts) do
+    cmd
+    |> Enum.into(%{})
+    |> trace_start()
+    
     with {:ok, _cmd, {doc, event}} <- DBConnection.execute(conn, %Query{action: :command}, [cmd], defaults(opts)),
          {:ok, doc} <- check_for_error(doc, event) do
+          trace_stop(event)
+
       {:ok, doc}
     end
+  end
 
+  defp trace_start(cmd) do
+    unless Mix.env() == :test do
+      :telemetry.execute([:mongo_driver, :query, :start], %{}, cmd)
+    end
+  end
+
+  defp trace_stop({event, duration}) do
+    unless Mix.env() == :test do
+      measurements = %{
+        duration: duration
+      }
+      
+      :telemetry.execute([:mongo_driver, :query, :stop], measurements, event)
+    end
   end
 
   defp check_for_error(%{"ok" => ok} = response, {event, duration}) when ok == 1 do
