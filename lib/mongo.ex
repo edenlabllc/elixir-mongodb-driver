@@ -765,20 +765,24 @@ defmodule Mongo do
   end
 
   defp trace_start(cmd) do
-    measurements = %{
-      start: DateTime.utc_now |> DateTime.to_string
-    }
-    
-    :telemetry.execute([:mongo_driver, :query_start], measurements, cmd)
+    unless Mix.env() == :test do
+      measurements = %{
+        start: DateTime.utc_now |> DateTime.to_string
+      }
+      
+      :telemetry.execute([:mongo_driver, :query_start], measurements, cmd)
+    end
   end
 
   defp trace_end({event, duration}) do
-    measurements = %{
-      duration: duration,
-      end: DateTime.utc_now |> DateTime.to_string
-    }
-    
-    :telemetry.execute([:mongo_driver, :query_end], measurements, event)
+    unless Mix.env() == :test do
+      measurements = %{
+        duration: duration,
+        end: DateTime.utc_now |> DateTime.to_string
+      }
+      
+      :telemetry.execute([:mongo_driver, :query_end], measurements, event)
+    end
   end
 
   defp check_for_error(%{"ok" => ok} = response, {event, duration}) when ok == 1 do
