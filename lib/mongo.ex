@@ -733,7 +733,7 @@ defmodule Mongo do
          {:ok, _cmd, {doc, event}} <- DBConnection.execute(conn, %Query{action: :command}, [new_cmd], defaults(opts)),
          doc                       <- Session.update_session(session, doc, opts),
          {:ok, doc}                <- check_for_error(doc, event) do
-      trace_end(event)
+      trace_stop(event)
           
       {:ok, doc}
     else
@@ -758,7 +758,7 @@ defmodule Mongo do
     
     with {:ok, _cmd, {doc, event}} <- DBConnection.execute(conn, %Query{action: :command}, [cmd], defaults(opts)),
          {:ok, doc} <- check_for_error(doc, event) do
-      trace_end(event)
+          trace_stop(event)
 
       {:ok, doc}
     end
@@ -766,22 +766,17 @@ defmodule Mongo do
 
   defp trace_start(cmd) do
     unless Mix.env() == :test do
-      measurements = %{
-        start: DateTime.utc_now |> DateTime.to_string
-      }
-      
-      :telemetry.execute([:mongo_driver, :query_start], measurements, cmd)
+      telemetry.execute([:mongo_driver, :query, :start], %{}, cmd)
     end
   end
 
-  defp trace_end({event, duration}) do
+  defp trace_stop({event, duration}) do
     unless Mix.env() == :test do
       measurements = %{
-        duration: duration,
-        end: DateTime.utc_now |> DateTime.to_string
+        duration: duration
       }
       
-      :telemetry.execute([:mongo_driver, :query_end], measurements, event)
+      :telemetry.execute([:mongo_driver, :query, :stop], measurements, event)
     end
   end
 
