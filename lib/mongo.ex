@@ -766,7 +766,7 @@ defmodule Mongo do
 
   defp trace_start(cmd) do
     unless Mix.env() == :test do
-      telemetry.execute([:mongo_driver, :query, :start], %{}, cmd)
+      :telemetry.execute([:mongo_driver, :query, :start], %{}, cmd)
     end
   end
 
