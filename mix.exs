@@ -33,8 +33,8 @@ defmodule Mongodb.Mixfile do
      env: []]
   end
 
-  def applications(:test), do: [:logger, :connection, :db_connection]
-  def applications(_), do: [:logger, :connection, :db_connection]
+  def applications(:test), do: [:logger, :connection, :db_connection, :telemetry]
+  def applications(_), do: [:logger, :connection, :db_connection, :telemetry]
 
   defp deps() do
     [
@@ -45,7 +45,8 @@ defmodule Mongodb.Mixfile do
       {:jason,         "~> 1.0.0", only: :test},
       {:ex_doc,        "~> 0.20.1 ", only: :dev},
       {:earmark,       ">= 0.0.0", only: :dev},
-      {:dialyxir,      "~> 0.5", only: [:dev], runtime: false}
+      {:dialyxir,      "~> 0.5", only: [:dev], runtime: false},
+      {:telemetry,     "~> 0.4"}
     ]
   end
 

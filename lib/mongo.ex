@@ -65,8 +65,6 @@ defmodule Mongo do
   @timeout 15000 # 5000
 
 
-  @env Mix.env()
-
   @dialyzer [no_match: [count_documents!: 4]]
 
   @type conn :: DbConnection.Conn
@@ -777,27 +775,21 @@ defmodule Mongo do
   end
 
   defp trace_error(error) do
-    unless @env == :test do
-      :telemetry.execute([:mongo_driver, :query, :start], %{}, error)
-    end
+    :telemetry.execute([:mongo_driver, :query, :start], %{}, error)
   rescue
     _ -> :error
   end
 
   defp trace_start(cmd) do
-    unless @env == :test do
-      :telemetry.execute([:mongo_driver, :query, :start], %{}, cmd)
-    end
+    :telemetry.execute([:mongo_driver, :query, :start], %{}, cmd)
   end
 
   defp trace_stop({event, duration}) do
-    unless @env == :test do
-      measurements = %{
-        duration: duration
-      }
-      
-      :telemetry.execute([:mongo_driver, :query, :stop], measurements, event)
-    end
+    measurements = %{
+      duration: duration
+    }
+    
+    :telemetry.execute([:mongo_driver, :query, :stop], measurements, event)
   end
 
   defp check_for_error(%{"ok" => ok} = response, {event, duration}) when ok == 1 do
