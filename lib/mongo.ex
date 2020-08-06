@@ -744,7 +744,9 @@ defmodule Mongo do
           with :ok <- Session.select_server(session, opts) do
            exec_command_session(session, cmd, Keyword.put(opts, :write_counter, 2))
           end
-          false -> {:error, error}
+          false -> 
+            trace_error(error)
+            {:error, error}
         end
     end
   end
@@ -761,7 +763,22 @@ defmodule Mongo do
           trace_stop(event)
 
       {:ok, doc}
+    else
+      {:error, error} = err ->
+        trace_error(error)
+        err
+      error -> 
+        trace_error(error)
+        error
     end
+  end
+
+  defp trace_error(error) do
+    unless Mix.env() == :test do
+      :telemetry.execute([:mongo_driver, :query, :start], %{}, error)
+    end
+  rescue
+    _ -> :error
   end
 
   defp trace_start(cmd) do
